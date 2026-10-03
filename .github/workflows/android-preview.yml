@@ -38,7 +38,10 @@ jobs:
           CI: '1'
         run: npx expo prebuild --platform android --no-install
       - name: Install native toolchain
-        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' | sort | tail -1)
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
       - name: Preview APK (generated debug signature, not production)
         working-directory: expo/${{ matrix.client }}/android
         run: |
