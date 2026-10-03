@@ -1,2 +1,2 @@
-# smalltalk-chat
-Vertex chat app prototype. User/admin Android clients, phased features, no production security or unlimited capacity claims.
+# Smalltalk chat - Vertex draft
+User/admin Android chat app in phased development. Current assets are local-demo text chat and same-device tic-tac-toe, not live service. Backend identity/auth and private storage pending. No E2EE or unlimited-capacity claim. Run `node --test core.test.mjs`; serve web/ over HTTP for preview. No wallets/financial keys, spend or Apex code. Preview APK not built yet. See PLAN.md for remaining phases and gates.
