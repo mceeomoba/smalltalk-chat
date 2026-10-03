@@ -1,4 +1,4 @@
-name: Android preview
+name: Android build
 on:
   workflow_dispatch:
   push:
@@ -37,21 +37,23 @@ jobs:
         working-directory: expo/${{ matrix.client }}
         env:
           CI: '1'
+          EXPO_PUBLIC_SUPABASE_URL: https://qhsmkufaqdcpiaxwekde.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.VERTEX_PUBLISHABLE_KEY }}
         run: npx expo prebuild --platform android --no-install
       - name: Install native toolchain
         run: |
           SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' | sort | tail -1)
           test -x "$SDKMANAGER"
           "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
-      - name: Preview APK (generated debug signature, not production)
+      - name: Build native APK (debug signature)
         working-directory: expo/${{ matrix.client }}/android
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon --max-workers 2 -PreactNativeArchitectures=arm64-v8a assembleRelease
-      - name: Upload preview only
+      - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: smalltalk-${{ matrix.client }}-preview-debug-signed
+          name: smalltalk-${{ matrix.client }}-debug-signed
           path: expo/${{ matrix.client }}/android/app/build/outputs/apk/release/*.apk
           retention-days: 1
           if-no-files-found: error
@@ -73,13 +75,15 @@ jobs:
       - name: Guard, apply atomically, and verify RLS
         run: |
           test -n "$PGPASSWORD"
-          existing=$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';")
-          if [ "$existing" = 0 ]; then
-            psql -X -v ON_ERROR_STOP=1 -f supabase/001_core.sql
-          elif [ "$existing" != 9 ]; then
-            echo "Unexpected public schema. Stopping without mutation."
-            exit 1
-          fi
+          base=$(psql -XAt -v ON_ERROR_STOP=1 -c "select to_regclass('public.profiles') is not null;")
+          if [ "$base" = f ]; then psql -X -v ON_ERROR_STOP=1 -f supabase/001_core.sql; fi
+          psql -X -v ON_ERROR_STOP=1 -c "create table if not exists private.migrations(version text primary key, applied_at timestamptz not null default now()); revoke all on private.migrations from public,anon,authenticated;"
+          for migration in 002_live_chat 003_games_admin; do
+            applied=$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from private.migrations where version='$migration';")
+            if [ "$applied" = 0 ]; then
+              { cat "supabase/$migration.sql" | sed '$d'; echo "insert into private.migrations(version) values('$migration'); commit;"; } | psql -X -v ON_ERROR_STOP=1
+            fi
+          done
           psql -X -v ON_ERROR_STOP=1 <<'SQL'
           do $$
           declare n integer;
