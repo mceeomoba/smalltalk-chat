@@ -5,6 +5,7 @@ on:
     paths:
       - expo-source.py
       - expo-locks.py
+      - backend-source.py
       - .github/workflows/android-preview.yml
 permissions:
   contents: read
@@ -54,3 +55,42 @@ jobs:
           path: expo/${{ matrix.client }}/android/app/build/outputs/apk/release/*.apk
           retention-days: 1
           if-no-files-found: error
+  vertex_schema:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    if: github.repository == 'mceeomoba/smalltalk-chat' && github.ref == 'refs/heads/main'
+    env:
+      PGHOST: aws-0-us-east-1.pooler.supabase.com
+      PGPORT: '5432'
+      PGDATABASE: postgres
+      PGUSER: postgres.qhsmkufaqdcpiaxwekde
+      PGSSLMODE: require
+      PGPASSWORD: ${{ secrets.VERTEX_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Materialize Vertex-only schema
+        run: python3 backend-source.py
+      - name: Guard, apply atomically, and verify RLS
+        run: |
+          test -n "$PGPASSWORD"
+          existing=$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';")
+          if [ "$existing" = 0 ]; then
+            psql -X -v ON_ERROR_STOP=1 -f supabase/001_core.sql
+          elif [ "$existing" != 9 ]; then
+            echo "Unexpected public schema. Stopping without mutation."
+            exit 1
+          fi
+          psql -X -v ON_ERROR_STOP=1 <<'SQL'
+          do $$
+          declare n integer;
+          begin
+            select count(*) into n from pg_class c join pg_namespace s on s.oid=c.relnamespace
+            where s.nspname='public' and c.relname in ('profiles','rooms','room_members','messages','blocks','reports','admin_roles','bans','audit_log')
+            and c.relkind='r' and c.relrowsecurity;
+            if n <> 9 then raise exception 'Expected nine RLS-enabled tables, found %', n; end if;
+            if has_table_privilege('anon','public.messages','select') then raise exception 'Anonymous read grant'; end if;
+            if has_table_privilege('authenticated','public.messages','insert') then raise exception 'Direct message write grant'; end if;
+            if has_table_privilege('authenticated','public.admin_roles','insert') then raise exception 'Client admin assignment grant'; end if;
+          end$$;
+          select tablename, rowsecurity from pg_tables where schemaname='public' order by tablename;
+          SQL
