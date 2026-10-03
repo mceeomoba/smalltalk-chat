@@ -11,6 +11,9 @@ permissions:
   contents: read
 jobs:
   preview:
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://qhsmkufaqdcpiaxwekde.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.VERTEX_PUBLISHABLE_KEY }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -58,6 +61,9 @@ jobs:
           retention-days: 1
           if-no-files-found: error
   vertex_schema:
+    concurrency:
+      group: vertex-schema
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     if: github.repository == 'mceeomoba/smalltalk-chat' && github.ref == 'refs/heads/main'
