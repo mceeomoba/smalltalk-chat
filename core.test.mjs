@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {validateMessage,play,outcome} from './web/core.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {validateMessage,play,outcome} from './core.mjs';
 test('text bounds and markup remains text data',()=>{assert.throws(()=>validateMessage(' '));assert.throws(()=>validateMessage('x'.repeat(2001)));assert.equal(validateMessage('<script>alert(1)</script>'),'<script>alert(1)</script>');});
 test('moves immutable occupied blocked and win locks board',()=>{const b=Array(9).fill(null),n=play(b,0,'X');assert.equal(b[0],null);assert.equal(n[0],'X');assert.throws(()=>play(n,0,'O'));assert.equal(outcome(['X','X','X',null,null,null,null,null,null]),'X');assert.throws(()=>play(['X','X','X',null,null,null,null,null,null],3,'O'));});
 test('draw and invalid inputs',()=>{assert.equal(outcome(['X','O','X','X','O','O','O','X','X']),'draw');assert.throws(()=>play([],1,'X'));assert.throws(()=>play(Array(9).fill(null),9,'X'));});
