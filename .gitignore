@@ -5,3 +5,9 @@ local.properties
 *.keystore
 *.p12
 .env*
+node_modules/
+dist/
+.expo/
+expo/*/android/
+expo/*/ios/
+*.zip
