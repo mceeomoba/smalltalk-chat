@@ -1,0 +1,3 @@
+export function validateMessage(body){if(typeof body!=='string'||!body.trim())throw Error('Write a message');if(body.length>2000)throw Error('Message too long');return body.trim();}
+export function play(board,index,turn){if(!Array.isArray(board)||board.length!==9||!['X','O'].includes(turn)||!Number.isInteger(index)||index<0||index>8)throw Error('Invalid move');if(board[index]||outcome(board))throw Error('Move unavailable');const next=board.slice();next[index]=turn;return next;}
+export function outcome(b){for(const [a,c,d] of [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]])if(b[a]&&b[a]===b[c]&&b[c]===b[d])return b[a];return b.every(Boolean)?'draw':null;}
