@@ -112,5 +112,7 @@ jobs:
             if has_table_privilege('authenticated','public.messages','insert') then raise exception 'Direct message write grant'; end if;
             if has_table_privilege('authenticated','public.admin_roles','insert') then raise exception 'Client admin assignment grant'; end if;
           end$$;
+          select kind,state,count(*) as jobs from private.push_outbox group by kind,state order by kind,state;
+          select status_code,count(*) as requests from net._http_response where created>now()-interval '20 minutes' group by status_code;
           select tablename, rowsecurity from pg_tables where schemaname='public' order by tablename;
           SQL
