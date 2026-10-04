@@ -86,7 +86,7 @@ jobs:
           if [ "$base" = f ]; then psql -X -v ON_ERROR_STOP=1 -f supabase/001_core.sql; fi
           psql -X -v ON_ERROR_STOP=1 -c "create table if not exists private.migrations(version text primary key, applied_at timestamptz not null default now()); revoke all on private.migrations from public,anon,authenticated;"
           psql -X -v ON_ERROR_STOP=1 -c "delete from private.migrations where version='013_chat_cards' and (to_regclass('public.poll_votes') is null or to_regclass('public.event_responses') is null or to_regprocedure('public.send_card(uuid,jsonb)') is null);"
-          for migration in 002_live_chat 003_games_admin 004_qa_cleanup 005_private_images 006_admin_controls 007_media_qa_cleanup 008_inbox 009_pixel_qa_cleanup 010_replies_voice 011_voice_calls 012_voice_qa_cleanup 013_chat_cards 014_cards_qa_cleanup 015_status_stickers 016_status_qa_cleanup 017_fcm_devices 019_profile_settings 020_voice_metadata 021_custom_stickers 022_profile_composer_qa_cleanup 024_auth_qa_cleanup 025_owner_admin 026_profile_load_fix 027_profile_fix_qa_cleanup 028_realtime_push_fix 029_username_admin; do
+          for migration in 002_live_chat 003_games_admin 004_qa_cleanup 005_private_images 006_admin_controls 007_media_qa_cleanup 008_inbox 009_pixel_qa_cleanup 010_replies_voice 011_voice_calls 012_voice_qa_cleanup 013_chat_cards 014_cards_qa_cleanup 015_status_stickers 016_status_qa_cleanup 017_fcm_devices 019_profile_settings 020_voice_metadata 021_custom_stickers 022_profile_composer_qa_cleanup 024_auth_qa_cleanup 025_owner_admin 026_profile_load_fix 027_profile_fix_qa_cleanup 028_realtime_push_fix 029_username_admin 030_pushrt_qa_cleanup; do
             applied=$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from private.migrations where version='$migration';")
             if [ "$applied" = 0 ]; then
               test -s "supabase/$migration.sql"
@@ -116,6 +116,7 @@ jobs:
           end$$;
           select schemaname,tablename from pg_publication_tables where pubname='supabase_realtime' order by tablename;
           select p.id,p.username,p.display_name,p.created_at,regexp_replace(u.email,'^(.).*(@.*)$',E'\\1***\\2') as masked_email,exists(select 1 from public.admin_roles a where a.user_id=p.id) as admin_assigned from public.profiles p join auth.users u on u.id=p.id where p.username='admin';
+          select count(*) as pushrt_qa_remaining from auth.users where id in ('1f6816c7-dbbc-42d8-af6d-9a4597c4537d'::uuid,'632f9ad3-73f7-4fff-9141-0e680204d809'::uuid,'7ac5e530-ab21-47e8-9b5d-3de9aab316ca'::uuid);
           select count(*) as profile_fix_qa_remaining from auth.users where id in ('7b1b34ab-e92f-4ff3-b020-47c227ef1e66'::uuid,'3c1ea1f4-08c2-4245-b2b5-7b339f10ad2c'::uuid);
           select u.id,lower(u.email) as account_email,exists(select 1 from public.admin_roles a where a.user_id=u.id) as admin_assigned from auth.users u where lower(u.email)='mceeomoba@gmail.com';
           select count(*) as synthetic_auth_accounts_remaining from auth.users where email like 'qa_auth_%@users.smalltalk.invalid' and created_at>='2026-10-04T09:00:00Z' and created_at<'2026-10-04T09:04:00Z';
