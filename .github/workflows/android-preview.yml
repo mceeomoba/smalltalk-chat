@@ -114,6 +114,9 @@ jobs:
             if has_table_privilege('authenticated','public.messages','insert') then raise exception 'Direct message write grant'; end if;
             if has_table_privilege('authenticated','public.admin_roles','insert') then raise exception 'Client admin assignment grant'; end if;
           end$$;
+          select count(*) as synthetic_accounts_remaining from auth.users where id in('826cdb65-45b2-4e1c-86c2-f442c86edf6f','13066598-ace0-4f20-a7df-4313ad9c7c19');
+          select jobname,schedule,active from cron.job where jobname in('smalltalk-push-retry','smalltalk-push-cleanup');
+          select status,count(*) from cron.job_run_details where start_time>now()-interval '20 minutes' group by status;
           select kind,state,count(*) as jobs from private.push_outbox group by kind,state order by kind,state;
           select status_code,count(*) as requests from net._http_response where created>now()-interval '20 minutes' group by status_code;
           select tablename, rowsecurity from pg_tables where schemaname='public' order by tablename;
