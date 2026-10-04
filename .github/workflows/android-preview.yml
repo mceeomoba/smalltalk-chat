@@ -32,7 +32,6 @@ jobs:
       - name: Materialize audited independent source and dependency locks
         run: |
           python3 expo-source.py
-          python3 expo-locks.py
       - name: Install dependencies
         working-directory: expo/${{ matrix.client }}
         run: npm ci --no-audit --no-fund
