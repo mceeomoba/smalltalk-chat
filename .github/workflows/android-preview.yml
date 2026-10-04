@@ -84,7 +84,7 @@ jobs:
           base=$(psql -XAt -v ON_ERROR_STOP=1 -c "select to_regclass('public.profiles') is not null;")
           if [ "$base" = f ]; then psql -X -v ON_ERROR_STOP=1 -f supabase/001_core.sql; fi
           psql -X -v ON_ERROR_STOP=1 -c "create table if not exists private.migrations(version text primary key, applied_at timestamptz not null default now()); revoke all on private.migrations from public,anon,authenticated;"
-          for migration in 002_live_chat 003_games_admin 004_qa_cleanup 005_private_images 006_admin_controls 007_media_qa_cleanup; do
+          for migration in 002_live_chat 003_games_admin 004_qa_cleanup 005_private_images 006_admin_controls 007_media_qa_cleanup 008_inbox; do
             applied=$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from private.migrations where version='$migration';")
             if [ "$applied" = 0 ]; then
               { cat "supabase/$migration.sql" | sed '$d'; echo "insert into private.migrations(version) values('$migration'); commit;"; } | psql -X -v ON_ERROR_STOP=1
