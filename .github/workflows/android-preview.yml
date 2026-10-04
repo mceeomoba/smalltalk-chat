@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read
 jobs:
-  preview:
+  android:
     env:
       EXPO_PUBLIC_SUPABASE_URL: https://qhsmkufaqdcpiaxwekde.supabase.co
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.VERTEX_PUBLISHABLE_KEY }}
@@ -55,7 +55,7 @@ jobs:
       - name: Upload native APK
         uses: actions/upload-artifact@v4
         with:
-          name: smalltalk-${{ matrix.client }}-debug-signed
+          name: ${{ matrix.client == 'user' && 'Smalltalk' || 'Smalltalk-Admin' }}-debug-signed
           path: expo/${{ matrix.client }}/android/app/build/outputs/apk/release/*.apk
           retention-days: 1
           if-no-files-found: error
