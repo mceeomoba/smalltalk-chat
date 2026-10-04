@@ -79,13 +79,16 @@ jobs:
         run: python3 backend-source.py
       - name: Guard, apply atomically, and verify RLS
         run: |
+          set -euo pipefail
           test -n "$PGPASSWORD"
           base=$(psql -XAt -v ON_ERROR_STOP=1 -c "select to_regclass('public.profiles') is not null;")
           if [ "$base" = f ]; then psql -X -v ON_ERROR_STOP=1 -f supabase/001_core.sql; fi
           psql -X -v ON_ERROR_STOP=1 -c "create table if not exists private.migrations(version text primary key, applied_at timestamptz not null default now()); revoke all on private.migrations from public,anon,authenticated;"
+          psql -X -v ON_ERROR_STOP=1 -c "delete from private.migrations where version='013_chat_cards' and (to_regclass('public.poll_votes') is null or to_regclass('public.event_responses') is null or to_regprocedure('public.send_card(uuid,jsonb)') is null);"
           for migration in 002_live_chat 003_games_admin 004_qa_cleanup 005_private_images 006_admin_controls 007_media_qa_cleanup 008_inbox 009_pixel_qa_cleanup 010_replies_voice 011_voice_calls 012_voice_qa_cleanup 013_chat_cards; do
             applied=$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from private.migrations where version='$migration';")
             if [ "$applied" = 0 ]; then
+              test -s "supabase/$migration.sql"
               { cat "supabase/$migration.sql" | sed '$d'; echo "insert into private.migrations(version) values('$migration'); commit;"; } | psql -X -v ON_ERROR_STOP=1
             fi
           done
