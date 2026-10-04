@@ -73,6 +73,7 @@ jobs:
       PGUSER: postgres.qhsmkufaqdcpiaxwekde
       PGSSLMODE: require
       PGPASSWORD: ${{ secrets.VERTEX_DB_PASSWORD }}
+      FCM_DISPATCH_SECRET: ${{ secrets.VERTEX_FCM_WEBHOOK_SECRET }}
     steps:
       - uses: actions/checkout@v5
       - name: Materialize Vertex-only schema
@@ -92,6 +93,13 @@ jobs:
               { cat "supabase/$migration.sql" | sed '$d'; echo "insert into private.migrations(version) values('$migration'); commit;"; } | psql -X -v ON_ERROR_STOP=1
             fi
           done
+          test -n "$FCM_DISPATCH_SECRET"
+          test -s supabase/018_fcm_dispatch.sql
+          printf '\set dispatch_secret %s\n' "$FCM_DISPATCH_SECRET" > /tmp/fcm-dispatch-input.sql
+          cat supabase/018_fcm_dispatch.sql >> /tmp/fcm-dispatch-input.sql
+          psql -X -v ON_ERROR_STOP=1 -f /tmp/fcm-dispatch-input.sql
+          rm /tmp/fcm-dispatch-input.sql
+          curl --fail-with-body --silent --show-error -X POST 'https://qhsmkufaqdcpiaxwekde.supabase.co/functions/v1/fcm' -H "x-fcm-key: $FCM_DISPATCH_SECRET" -H 'Content-Type: application/json' -d '{}'
           psql -X -v ON_ERROR_STOP=1 <<'SQL'
           do $$
           declare n integer;
