@@ -86,7 +86,7 @@ jobs:
           if [ "$base" = f ]; then psql -X -v ON_ERROR_STOP=1 -f supabase/001_core.sql; fi
           psql -X -v ON_ERROR_STOP=1 -c "create table if not exists private.migrations(version text primary key, applied_at timestamptz not null default now()); revoke all on private.migrations from public,anon,authenticated;"
           psql -X -v ON_ERROR_STOP=1 -c "delete from private.migrations where version='013_chat_cards' and (to_regclass('public.poll_votes') is null or to_regclass('public.event_responses') is null or to_regprocedure('public.send_card(uuid,jsonb)') is null);"
-          for migration in 002_live_chat 003_games_admin 004_qa_cleanup 005_private_images 006_admin_controls 007_media_qa_cleanup 008_inbox 009_pixel_qa_cleanup 010_replies_voice 011_voice_calls 012_voice_qa_cleanup 013_chat_cards 014_cards_qa_cleanup 015_status_stickers 016_status_qa_cleanup 017_fcm_devices; do
+          for migration in 002_live_chat 003_games_admin 004_qa_cleanup 005_private_images 006_admin_controls 007_media_qa_cleanup 008_inbox 009_pixel_qa_cleanup 010_replies_voice 011_voice_calls 012_voice_qa_cleanup 013_chat_cards 014_cards_qa_cleanup 015_status_stickers 016_status_qa_cleanup 017_fcm_devices 019_profile_settings; do
             applied=$(psql -XAt -v ON_ERROR_STOP=1 -c "select count(*) from private.migrations where version='$migration';")
             if [ "$applied" = 0 ]; then
               test -s "supabase/$migration.sql"
